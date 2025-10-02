@@ -31,6 +31,12 @@ services:
     # Application arguments
     command:
       - "--monitor-only"
+      # Exclude specific containers
+      # - "--exclude-containers"
+      # - "portainer,watchtower"
+      # Exclude specific images
+      # - "--exclude-images"
+      # - "alpine,redis"
       # For ECS integration, use:
       # - "--enable-ecs"
       # - "--cluster"

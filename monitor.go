@@ -16,10 +16,12 @@ import (
 
 // Monitor surveille l'activité des conteneurs Azure DevOps Agent
 type Monitor struct {
-	dockerClient *client.Client
-	ctx          context.Context
-	cancel       context.CancelFunc
-	activityChan chan ActivityEvent
+	dockerClient      *client.Client
+	ctx               context.Context
+	cancel            context.CancelFunc
+	activityChan      chan ActivityEvent
+	excludeContainers []string // Liste des noms/IDs de conteneurs à exclure
+	excludeImages     []string // Liste des images à exclure
 }
 
 // ActivityEvent représente un événement d'activité
@@ -32,8 +34,19 @@ type ActivityEvent struct {
 	IsAzureAgent  bool
 }
 
+// MonitorConfig contient la configuration du moniteur
+type MonitorConfig struct {
+	ExcludeContainers []string // Noms ou IDs de conteneurs à exclure
+	ExcludeImages     []string // Images à exclure (patterns)
+}
+
 // NewMonitor crée une nouvelle instance du moniteur
 func NewMonitor() (*Monitor, error) {
+	return NewMonitorWithConfig(MonitorConfig{})
+}
+
+// NewMonitorWithConfig crée une nouvelle instance du moniteur avec configuration
+func NewMonitorWithConfig(config MonitorConfig) (*Monitor, error) {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Docker client: %w", err)
@@ -42,11 +55,34 @@ func NewMonitor() (*Monitor, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &Monitor{
-		dockerClient: cli,
-		ctx:          ctx,
-		cancel:       cancel,
-		activityChan: make(chan ActivityEvent, 100),
+		dockerClient:      cli,
+		ctx:               ctx,
+		cancel:            cancel,
+		activityChan:      make(chan ActivityEvent, 100),
+		excludeContainers: config.ExcludeContainers,
+		excludeImages:     config.ExcludeImages,
 	}, nil
+}
+
+// isExcluded vérifie si un conteneur doit être exclu
+func (m *Monitor) isExcluded(containerID, containerName, imageName string) bool {
+	// Vérifier l'exclusion par nom ou ID de conteneur
+	for _, excluded := range m.excludeContainers {
+		if strings.Contains(containerName, excluded) || strings.Contains(containerID, excluded) {
+			log.Printf("Container %s (%s) excluded by container filter: %s", containerName, containerID[:12], excluded)
+			return true
+		}
+	}
+
+	// Vérifier l'exclusion par image
+	for _, excluded := range m.excludeImages {
+		if strings.Contains(imageName, excluded) {
+			log.Printf("Container %s (%s) excluded by image filter: %s", containerName, containerID[:12], excluded)
+			return true
+		}
+	}
+
+	return false
 }
 
 // IsAzureAgentContainer vérifie si un conteneur est un agent Azure DevOps
@@ -91,6 +127,13 @@ func (m *Monitor) GetRunningAzureAgents() ([]ActivityEvent, error) {
 
 	var agents []ActivityEvent
 	for _, c := range containers {
+		name := strings.TrimPrefix(c.Names[0], "/")
+
+		// Vérifier si le conteneur est exclu
+		if m.isExcluded(c.ID, name, c.Image) {
+			continue
+		}
+
 		containerInfo, err := m.dockerClient.ContainerInspect(m.ctx, c.ID)
 		if err != nil {
 			log.Printf("Warning: failed to inspect container %s: %v", c.ID, err)
@@ -98,7 +141,6 @@ func (m *Monitor) GetRunningAzureAgents() ([]ActivityEvent, error) {
 		}
 
 		if m.IsAzureAgentContainer(containerInfo) {
-			name := strings.TrimPrefix(c.Names[0], "/")
 			agents = append(agents, ActivityEvent{
 				ContainerID:   c.ID[:12],
 				ContainerName: name,
@@ -185,13 +227,18 @@ func (m *Monitor) handleDockerEvent(event events.Message) {
 		return
 	}
 
+	name := event.Actor.Attributes["name"]
+	image := event.Actor.Attributes["image"]
+
+	// Vérifier si le conteneur est exclu
+	if m.isExcluded(event.Actor.ID, name, image) {
+		return
+	}
+
 	isAzureAgent := m.IsAzureAgentContainer(containerInfo)
 	if !isAzureAgent {
 		return
 	}
-
-	name := event.Actor.Attributes["name"]
-	image := event.Actor.Attributes["image"]
 
 	activityEvent := ActivityEvent{
 		ContainerID:   event.Actor.ID[:12],

@@ -23,6 +23,7 @@ This tool watches Docker socket for Azure DevOps Agent container activity and in
 - **ECS heartbeat** - Sends periodic activity signals to ECS
 - **Instance protection** - Can enable/disable termination protection
 - **Standalone mode** - Can run in monitoring-only mode without ECS
+- **Flexible filtering** - Exclude specific containers or images from monitoring
 
 ## Quick Start
 
@@ -63,6 +64,12 @@ services:
 
     command:
       - "--monitor-only"
+      # Exclude specific containers (optional)
+      # - "--exclude-containers"
+      # - "portainer,watchtower"
+      # Exclude specific images (optional)
+      # - "--exclude-images"
+      # - "alpine,redis"
       # For ECS integration, use:
       # - "--enable-ecs"
       # - "--cluster"
@@ -113,6 +120,21 @@ go build -o ecsazrlc ./cmd
 
 ```bash
 ./ecsazrlc --enable-ecs --cluster my-cluster --heartbeat 30s
+```
+
+### Excluding containers from monitoring
+
+```bash
+# Exclude specific containers by name
+./ecsazrlc --monitor-only --exclude-containers "portainer,watchtower,nginx"
+
+# Exclude by image name
+./ecsazrlc --monitor-only --exclude-images "postgres,mysql,redis"
+
+# Combine both filters
+./ecsazrlc --enable-ecs --cluster my-cluster \
+  --exclude-containers "test-container" \
+  --exclude-images "alpine,busybox"
 ```
 
 ## Use Cases
@@ -199,6 +221,8 @@ See [CREDENTIALS.md](CREDENTIALS.md) for details.
 - `--enable-ecs` - Enable ECS notifications
 - `--monitor-only` - Monitoring-only mode without ECS
 - `--verbose` - Verbose mode with detailed logs
+- `--exclude-containers` - Exclude containers by name or ID (comma-separated)
+- `--exclude-images` - Exclude containers by image name (comma-separated)
 
 ## Supported Platforms
 

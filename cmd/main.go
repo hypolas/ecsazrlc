@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -18,6 +19,8 @@ func main() {
 	enableECS := flag.Bool("enable-ecs", false, "Activer les notifications ECS")
 	monitorOnly := flag.Bool("monitor-only", false, "Mode monitoring seul sans ECS")
 	verbose := flag.Bool("verbose", false, "Mode verbose")
+	excludeContainers := flag.String("exclude-containers", "", "Conteneurs à exclure (séparés par des virgules)")
+	excludeImages := flag.String("exclude-images", "", "Images à exclure (séparés par des virgules)")
 	flag.Parse()
 
 	if *verbose {
@@ -34,12 +37,37 @@ func main() {
 		log.Fatal("Le nom du cluster ECS est requis avec --enable-ecs (utilisez --cluster)")
 	}
 
+	// Préparer la configuration du moniteur
+	var excludeContainersList, excludeImagesList []string
+	if *excludeContainers != "" {
+		excludeContainersList = strings.Split(*excludeContainers, ",")
+		for i := range excludeContainersList {
+			excludeContainersList[i] = strings.TrimSpace(excludeContainersList[i])
+		}
+	}
+	if *excludeImages != "" {
+		excludeImagesList = strings.Split(*excludeImages, ",")
+		for i := range excludeImagesList {
+			excludeImagesList[i] = strings.TrimSpace(excludeImagesList[i])
+		}
+	}
+
 	// Créer le moniteur Docker
-	monitor, err := ecsazrlc.NewMonitor()
+	monitor, err := ecsazrlc.NewMonitorWithConfig(ecsazrlc.MonitorConfig{
+		ExcludeContainers: excludeContainersList,
+		ExcludeImages:     excludeImagesList,
+	})
 	if err != nil {
 		log.Fatalf("Failed to create monitor: %v", err)
 	}
 	defer monitor.Stop()
+
+	if len(excludeContainersList) > 0 {
+		log.Printf("Excluding containers: %v", excludeContainersList)
+	}
+	if len(excludeImagesList) > 0 {
+		log.Printf("Excluding images: %v", excludeImagesList)
+	}
 
 	log.Println("Docker monitor initialized successfully")
 
