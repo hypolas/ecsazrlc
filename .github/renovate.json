@@ -30,7 +30,7 @@
       "matchUpdateTypes": ["minor", "patch"],
       "matchDatasources": ["go"],
       "groupName": "Go minor and patch updates",
-      "automerge": false
+      "automerge": true
     },
     {
       "matchUpdateTypes": ["major"],
