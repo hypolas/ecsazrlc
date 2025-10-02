@@ -3,7 +3,7 @@ name: Renovate
 on:
   # Run on schedule (every day at 13:30 UTC / 14:30 CET / 15:30 CEST)
   schedule:
-    - cron: '30 13 * * *'
+    - cron: '20 14 * * *'
 
   # Manual trigger
   workflow_dispatch:
