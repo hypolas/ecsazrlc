@@ -1,6 +1,10 @@
 # Build stage
 FROM golang:1.25.1-alpine AS builder
 
+# Build arguments for multi-platform support
+ARG TARGETOS
+ARG TARGETARCH
+
 # Install dependencies
 RUN apk add --no-cache git ca-certificates
 
@@ -10,14 +14,13 @@ WORKDIR /build
 COPY go.mod go.sum ./
 
 # Download dependencies
-RUN echo $GOOS
 RUN go mod download
 
 # Copy source code
 COPY . .
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+# Build the application with platform-specific variables
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
     -ldflags="-s -w" \
     -o ecsazrlc \
     ./cmd
