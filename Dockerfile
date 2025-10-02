@@ -23,7 +23,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     ./cmd
 
 # Runtime stage
-FROM alpine:latest
+FROM alpine:3.18.12
 
 # Install ca-certificates for HTTPS and Docker CLI for socket access
 RUN apk --no-cache add ca-certificates
