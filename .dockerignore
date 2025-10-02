@@ -1,0 +1,42 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+ecsazrlc
+ecsazrlc.exe
+
+# Test files
+*_test.go
+*.test
+*.out
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation (optional, uncomment to exclude)
+# *.md
+# README.md
+
+# Logs
+*.log
+
+# Go workspace
+go.work.sum
+
+# Temporary files
+tmp/
+temp/

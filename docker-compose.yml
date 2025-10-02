@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  ecsazrlc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: hypolas/ecsazrlc:latest
+    container_name: ecsazrlc
+    restart: unless-stopped
+
+    # Mount Docker socket for monitoring
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+    # AWS credentials and configuration
+    environment:
+      # AWS Region
+      - AWS_REGION=${AWS_REGION:-eu-west-1}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-eu-west-1}
+
+      # Optional: AWS credentials (prefer IAM roles in production)
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}
+      - AWS_PROFILE=${AWS_PROFILE:-}
+
+    # Mount AWS credentials file (optional, for local dev)
+    # Uncomment if using ~/.aws/credentials
+    # volumes:
+    #   - ~/.aws:/home/ecsazrlc/.aws:ro
+
+    # Application arguments
+    command:
+      - "--monitor-only"
+      # For ECS integration, use:
+      # - "--enable-ecs"
+      # - "--cluster"
+      # - "your-cluster-name"
+      # - "--heartbeat"
+      # - "30s"
+
+    # Optional: Healthcheck
+    # healthcheck:
+    #   test: ["CMD", "/app/ecsazrlc", "--version"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Network mode (use host for better Docker socket access on Linux)
+    # network_mode: "host"
+
+  # Example: Azure DevOps Agent container for testing
+  azure-agent-example:
+    image: mcr.microsoft.com/azure-pipelines/vsts-agent:latest
+    container_name: azure-agent-test
+    environment:
+      - AZP_URL=${AZP_URL:-}
+      - AZP_TOKEN=${AZP_TOKEN:-}
+      - AZP_AGENT_NAME=${AZP_AGENT_NAME:-docker-agent}
+      - AZP_POOL=${AZP_POOL:-Default}
+    restart: unless-stopped
+    # Only start this if you want to test with a real Azure agent
+    profiles:
+      - test
