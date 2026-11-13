@@ -54,9 +54,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          # Build arguments (optional)
-          build-args: |
-            GO_VERSION=1.25.1
 
       # - name: Update Docker Hub description
       #   uses: peter-evans/dockerhub-description@v4

@@ -2,7 +2,7 @@
 
 [![Docker Hub](https://img.shields.io/badge/docker-hypolas%2Fecsazrlc-blue?logo=docker)](https://hub.docker.com/r/hypolas/ecsazrlc)
 [![Docker Pulls](https://img.shields.io/docker/pulls/hypolas/ecsazrlc)](https://hub.docker.com/r/hypolas/ecsazrlc)
-[![Go Version](https://img.shields.io/badge/go-1.25.1+-00ADD8?logo=go)](https://go.dev/)
+[![Go Version](https://img.shields.io/badge/go-1.27.3-00ADD8?logo=go)](https://go.dev/)
 
 > **AWS ECS Instance Protection** | **Azure DevOps Agent Monitor** | **Docker Container Activity Tracker** | **CI/CD Build Protection**
 
@@ -101,6 +101,26 @@ podman compose up -d
 podman compose logs -f ecsazrlc
 ```
 
+### Local development with mise
+
+Install [mise](https://mise.jdx.dev/installing-mise.html), then from the repository root:
+
+```bash
+mise trust
+mise install --locked go
+mise run test
+mise run build
+```
+
+The build task writes the executable to `bin/`. Use `mise exec -- go version` or
+`mise exec -- go <command>` to run the pinned Go toolchain without activating a
+shell. Docker or Podman is still required for container-related operations.
+
+To deliberately update Go, run `mise use go@<exact-version>`, regenerate the
+lock with `mise lock --platform linux-x64,linux-arm64,macos-x64,macos-arm64,windows-x64`,
+update the Go builder image in the Dockerfile to match, and review the changes and
+run the tests. The lock covers Windows x64, Linux x64/arm64 and macOS x64/arm64.
+
 ### Local Build
 
 ```bash
@@ -182,7 +202,7 @@ go build -o ecsazrlc ./cmd
 
 ## Technology Stack
 
-- **Language**: Go 1.25.1+
+- **Language**: Go (version pinned in `mise.toml`)
 - **Cloud**: AWS ECS, EC2, IAM
 - **CI/CD**: Azure DevOps, Azure Pipelines
 - **Container**: Docker, Podman
@@ -191,7 +211,7 @@ go build -o ecsazrlc ./cmd
 ## Requirements
 
 - Docker or Podman
-- Go 1.25.1+ (for local builds)
+- mise and the pinned Go toolchain (for local builds)
 - AWS credentials (IAM role recommended)
 - Access to Docker socket
 

@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.25.1-alpine AS builder
+FROM golang:1.27.3-alpine3.24 AS builder
 
 # Build arguments for multi-platform support
 ARG TARGETOS
@@ -26,7 +26,7 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
     ./cmd
 
 # Runtime stage
-FROM alpine:3.18.12
+FROM alpine:3.24.4
 
 # Install ca-certificates for HTTPS and Docker CLI for socket access
 RUN apk --no-cache add ca-certificates
